@@ -7,19 +7,24 @@ menu_order: 70
 
 ##<a name="connection-dropped"></a>"Connection dropped by Weave NPC"
 
-When using Weave together with [Kubernetes](http://kubernetes.io) and [Weave NPC](https://github.com/weaveworks/weave-npc), Weave's Kubernetes Network Policy Controller, `weave launch --expect-npc` sets up the two below default `iptables` rules, in case none of the NPC rules apply:
+When using [Weave Net](https://github.com/weaveworks/weave) together with [Kubernetes](http://kubernetes.io) and [Weave NPC](https://github.com/weaveworks/weave-npc), Weave's Kubernetes Network Policy Controller, Weave Net sets up the two below default `iptables` rules, in case none of the NPC rules apply:
 
     LOG --log-prefix="Connection dropped by Weave NPC"
     DROP
 
-This can eventually generate kernel log messages like the below one:
+If a packet is not handled by any of the NPC rules, and therefore reaches the two above rules, then `iptables` will:
+    
+* write details about the packet in the Kernel logs, e.g.:
 
-    [12345.678901] Connection dropped by Weave NPC:=IN= OUT=eth0 SRC=xxx.xxx.xxx.xxx DST=yyy.yyy.yyy.yyy LEN=xx TOS=0x00 PREC=0x00 TTL=64 ID=1001 DF PROTO=ICMP TYPE=8 CODE=0 ID=1337 SEQ=1
+    Connection dropped by Weave NPC:=IN= OUT=eth0 SRC=xxx.xxx.xxx.xxx DST=yyy.yyy.yyy.yyy LEN=xx TOS=0x00 PREC=0x00 TTL=64 ID=1001 DF PROTO=ICMP TYPE=8 CODE=0 ID=1337 SEQ=1
 
-If you ever see the above message and did not expect it, then:
+* drop the packet.
 
-* you must have enabled the `DefaultDeny` policy in NPC -- which is off by default, in which case NPC implements `DefaultAllow` and the packet never makes it to the above default rules as it is accepted by NPC much earlier;
-* you did not configure a network policy allowing the traffic for this packet.
+Therefore, if you ever face difficulties to connect containers in such a setup, a good place to start looking is these Kernel logs, for example, using the `dmesg` command.
+If you ever see a message containing "`Connection dropped by Weave NPC`", like the one above, and did not expect it, then:
+
+* you must have replaced NPC's default `DefaultAllow` policy with the `DefaultDeny` policy;
+* you did not configure a network policy allowing the traffic for this type of packets.
 
 This could mean that either:
 
