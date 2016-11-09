@@ -32,15 +32,31 @@ sleep 5
 
 wait_for_connections() {
     for i in $(seq 1 30); do
+        echo "######################### HOST1 #######################################"
+        run_on $HOST1 "curl -sS http://127.0.0.1:6784/status/connections" || true
+        echo "######################### HOST2 #######################################"
+        run_on $HOST2 "curl -sS http://127.0.0.1:6784/status/connections" || true
+        echo "######################### HOST3 #######################################"
+        run_on $HOST3 "curl -sS http://127.0.0.1:6784/status/connections" || true
         if run_on $HOST1 "curl -sS http://127.0.0.1:6784/status | grep \"$SUCCESS\"" ; then
             return
         fi
         echo "Waiting for connections"
         sleep 1
+        echo
+        echo
+        echo
+        run_on $HOST1 "kubectl get --all-namespaces pods -o wide" || true
     done
     echo "Timed out waiting for connections to establish" >&2
     exit 1
 }
+
+wait_for_connections
+
+sleep 3600
+
+exit 1
 
 assert_raises wait_for_connections
 
